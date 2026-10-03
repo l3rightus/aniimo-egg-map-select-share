@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aniimo Egg Map</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="home">
+    <div class="card">
+      <h1>Aniimo Egg Map</h1>
+      <p>สร้างห้อง เลือกแมพ แล้วแชร์ลิ้งให้เพื่อน ทุกคนในห้องจะเห็นแมพเดียวกับที่หัวหน้าห้องเลือกแบบเรียลไทม์</p>
+
+      <button id="create" class="btn primary">สร้างห้องใหม่</button>
+
+      <div class="divider">หรือเข้าห้องด้วยรหัส</div>
+
+      <form id="join-form" class="join">
+        <input id="code" placeholder="รหัสห้อง" maxlength="6" autocomplete="off" aria-label="รหัสห้อง">
+        <button class="btn" type="submit">เข้าห้อง</button>
+      </form>
+
+      <div id="error" class="error" role="alert"></div>
+    </div>
+  </main>
+
+  <script>
+    const errorEl = document.getElementById('error');
+    const createBtn = document.getElementById('create');
+
+    createBtn.addEventListener('click', async () => {
+      createBtn.disabled = true;
+      errorEl.textContent = '';
+      try {
+        const res = await fetch('/api/rooms', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'สร้างห้องไม่สำเร็จ');
+        try { localStorage.setItem('hostToken:' + data.roomId, data.hostToken); } catch {}
+        // เก็บ token ไว้ใน hash ด้วย เผื่อ localStorage ใช้ไม่ได้ (hash ไม่ถูกส่งไปที่ server)
+        location.href = '/room/' + data.roomId + '#host=' + encodeURIComponent(data.hostToken);
+      } catch (e) {
+        errorEl.textContent = e.message;
+        createBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('join-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('code').value.trim().toUpperCase();
+      if (!/^[A-Z0-9]{6}$/.test(code)) {
+        errorEl.textContent = 'รหัสห้องต้องมี 6 ตัวอักษร';
+        return;
+      }
+      location.href = '/room/' + code;
+    });
+  </script>
+</body>
+</html>
