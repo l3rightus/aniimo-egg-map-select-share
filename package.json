@@ -1,0 +1,10 @@
+{
+  "name": "aniimo-egg-map-select-share",
+  "version": "2.0.0",
+  "private": true,
+  "description": "สร้างห้อง เลือกแมพ แล้วแชร์ลิ้งให้เพื่อนเห็นแมพเดียวกันแบบเรียลไทม์ (GitHub Pages + Firebase)",
+  "scripts": {
+    "start": "npx --yes http-server public -p 3000 -c-1"
+  },
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ห้อง · Aniimo Egg Map</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="room">
+    <header class="topbar">
+      <a class="home-link" href="./">← หน้าแรก</a>
+      <span>ห้อง <span id="room-code" class="room-code">------</span></span>
+      <span id="role" class="badge">ผู้ชม</span>
+      <span id="status" class="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></span>
+      <span id="viewers" class="badge">👥 0</span>
+      <span class="spacer"></span>
+      <button id="copy-link" class="btn small">คัดลอกลิ้งแชร์</button>
+    </header>
+
+    <nav id="picker" class="picker" hidden aria-label="เลือกแมพ"></nav>
+    <div id="viewer-note" class="viewer-note">หัวหน้าห้องเป็นคนเลือกแมพ แมพจะเปลี่ยนตามอัตโนมัติ</div>
+
+    <main id="stage" class="stage">
+      <img id="map-img" alt="" draggable="false" hidden>
+      <div id="stage-title" class="stage-title" hidden></div>
+      <div id="empty" class="empty">กำลังโหลด…</div>
+      <div class="zoom-controls">
+        <button class="btn" id="zoom-in" aria-label="ซูมเข้า">+</button>
+        <button class="btn" id="zoom-out" aria-label="ซูมออก">−</button>
+        <button class="btn" id="zoom-fit" aria-label="พอดีจอ">⤢</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script type="module" src="room.js"></script>
+</body>
+</html>

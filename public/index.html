@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aniimo Egg Map</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="home">
+    <div class="card">
+      <h1>Aniimo Egg Map</h1>
+      <p>สร้างห้อง เลือกแมพ แล้วแชร์ลิ้งให้เพื่อน ทุกคนในห้องจะเห็นแมพเดียวกับที่หัวหน้าห้องเลือกแบบเรียลไทม์</p>
+
+      <button id="create" class="btn primary">สร้างห้องใหม่</button>
+
+      <div class="divider">หรือเข้าห้องด้วยรหัส</div>
+
+      <form id="join-form" class="join">
+        <input id="code" placeholder="รหัสห้อง" maxlength="6" autocomplete="off" aria-label="รหัสห้อง">
+        <button class="btn" type="submit">เข้าห้อง</button>
+      </form>
+
+      <div id="error" class="error" role="alert"></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { configured, createRoom, loadMaps, ROOM_ID_RE } from './firebase.js';
+
+    const errorEl = document.getElementById('error');
+    const createBtn = document.getElementById('create');
+
+    if (!configured) {
+      createBtn.disabled = true;
+      errorEl.textContent = 'ยังไม่ได้ตั้งค่า Firebase (แก้ไฟล์ firebase-config.js ตามขั้นตอนใน README)';
+    }
+
+    createBtn.addEventListener('click', async () => {
+      createBtn.disabled = true;
+      errorEl.textContent = '';
+      try {
+        const maps = await loadMaps();
+        const roomId = await createRoom(maps[0]?.id ?? '');
+        location.href = 'room.html?r=' + roomId;
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = 'สร้างห้องไม่สำเร็จ: ' + e.message;
+        createBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('join-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('code').value.trim().toUpperCase();
+      if (!ROOM_ID_RE.test(code)) {
+        errorEl.textContent = 'รหัสห้องไม่ถูกต้อง (ต้องมี 6 ตัวอักษร)';
+        return;
+      }
+      location.href = 'room.html?r=' + code;
+    });
+  </script>
+</body>
+</html>
