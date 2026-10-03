@@ -13,30 +13,65 @@
       <span>ห้อง <span id="room-code" class="room-code">------</span></span>
       <span id="role" class="badge">ผู้ชม</span>
       <span id="status" class="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></span>
-      <span id="viewers" class="badge">👥 0</span>
+      <button id="viewers" class="badge badge-btn" aria-haspopup="dialog" title="คนในห้อง">👥 0</button>
       <span class="spacer"></span>
       <button id="copy-link" class="btn small">คัดลอกลิ้งแชร์</button>
     </header>
 
     <nav id="picker" class="picker" hidden aria-label="เลือกแมพ"></nav>
-    <div id="viewer-note" class="viewer-note">หัวหน้าห้องเป็นคนเลือกแมพ แมพจะเปลี่ยนตามอัตโนมัติ</div>
+    <div id="viewer-note" class="viewer-note">หัวหน้าห้องเป็นคนเลือกแมพ · แตะ ✓ เพื่อติ๊กจุดที่เก็บแล้ว · แตะค้างเพื่อ ping</div>
+    <div id="claim-bar" class="claim-bar" hidden>
+      หัวหน้าห้องออฟไลน์อยู่
+      <button id="claim-host" class="btn small primary">รับตำแหน่งหัวหน้า</button>
+    </div>
 
     <main id="stage" class="stage">
       <img id="map-img" alt="" draggable="false" hidden>
       <div id="stage-title" class="stage-title" hidden></div>
       <div id="marks" class="marks" hidden></div>
       <div id="empty" class="empty">กำลังโหลด…</div>
+
+      <div id="tools" class="tools" role="toolbar" aria-label="เครื่องมือ">
+        <button class="tool active" data-mode="pan" title="เลื่อนแมพ" aria-label="เลื่อนแมพ">✋</button>
+        <button class="tool tool-check" data-mode="check" title="ติ๊กจุดที่เก็บแล้ว" aria-label="ติ๊กเก็บแล้ว">✓</button>
+        <span class="host-only tool-sep" hidden></span>
+        <button class="tool tool-x host-only" data-mode="x" title="วางกากบาท" aria-label="วางกากบาท" hidden>✕</button>
+        <button class="tool tool-num host-only" data-mode="num" title="วางเลขลำดับ" aria-label="วางเลขลำดับ" hidden>1</button>
+        <span id="colors" class="colors host-only" hidden></span>
+        <span class="host-only tool-sep" hidden></span>
+        <button class="tool host-only" id="mark-clear" title="ลบมาร์กทั้งหมดในแมพนี้" aria-label="ลบมาร์กทั้งหมดในแมพนี้" hidden>🗑</button>
+        <button class="tool host-only" id="reset-round" title="เริ่มรอบใหม่ (ล้างทุกแมพ)" aria-label="เริ่มรอบใหม่" hidden>↺</button>
+      </div>
+
       <div class="zoom-controls">
-        <div id="mark-tools" class="mark-tools" hidden>
-          <button class="btn" id="mark-toggle" aria-pressed="false" title="โหมดวางกากบาท" aria-label="โหมดวางกากบาท">✕</button>
-          <button class="btn" id="mark-clear" title="ลบกากบาททั้งหมดในแมพนี้" aria-label="ลบกากบาททั้งหมด" disabled>🗑</button>
-        </div>
         <button class="btn" id="zoom-in" aria-label="ซูมเข้า">+</button>
         <button class="btn" id="zoom-out" aria-label="ซูมออก">−</button>
         <button class="btn" id="zoom-fit" aria-label="พอดีจอ">⤢</button>
       </div>
     </main>
   </div>
+
+  <dialog id="members-dialog" class="dialog">
+    <form method="dialog">
+      <h2>คนในห้อง</h2>
+      <ul id="members-list" class="members"></ul>
+      <div class="dialog-actions">
+        <button class="btn small" id="rename" type="button">เปลี่ยนชื่อ</button>
+        <button class="btn small primary">ปิด</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="name-dialog" class="dialog">
+    <form id="name-form" method="dialog">
+      <h2>ชื่อเล่นของคุณ</h2>
+      <p class="muted">เพื่อนในห้องจะเห็นชื่อนี้ตอนคุณติ๊กหรือ ping</p>
+      <input id="name-input" maxlength="20" autocomplete="nickname" required>
+      <div class="dialog-actions">
+        <button class="btn primary">ตกลง</button>
+      </div>
+    </form>
+  </dialog>
 
   <div id="toast" class="toast" role="status"></div>
 
