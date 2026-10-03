@@ -4,19 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ห้อง · Aniimo Egg Map</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="room">
     <header class="topbar">
-      <a class="home-link" href="/">← หน้าแรก</a>
+      <a class="home-link" href="./">← หน้าแรก</a>
       <span>ห้อง <span id="room-code" class="room-code">------</span></span>
       <span id="role" class="badge">ผู้ชม</span>
       <span id="status" class="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></span>
       <span id="viewers" class="badge">👥 0</span>
       <span class="spacer"></span>
       <button id="copy-link" class="btn small">คัดลอกลิ้งแชร์</button>
-      <button id="copy-host" class="btn small" hidden title="ลิ้งนี้ให้สิทธิ์หัวหน้าห้อง ใช้เปิดบนเครื่องอื่นของคุณเอง">ลิ้งหัวหน้าห้อง</button>
     </header>
 
     <nav id="picker" class="picker" hidden aria-label="เลือกแมพ"></nav>
@@ -36,6 +35,6 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <script src="/room.js"></script>
+  <script type="module" src="room.js"></script>
 </body>
 </html>

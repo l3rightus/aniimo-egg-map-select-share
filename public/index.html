@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Aniimo Egg Map</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="home">
@@ -25,22 +25,27 @@
     </div>
   </main>
 
-  <script>
+  <script type="module">
+    import { configured, createRoom, loadMaps, ROOM_ID_RE } from './firebase.js';
+
     const errorEl = document.getElementById('error');
     const createBtn = document.getElementById('create');
+
+    if (!configured) {
+      createBtn.disabled = true;
+      errorEl.textContent = 'ยังไม่ได้ตั้งค่า Firebase (แก้ไฟล์ firebase-config.js ตามขั้นตอนใน README)';
+    }
 
     createBtn.addEventListener('click', async () => {
       createBtn.disabled = true;
       errorEl.textContent = '';
       try {
-        const res = await fetch('/api/rooms', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'สร้างห้องไม่สำเร็จ');
-        try { localStorage.setItem('hostToken:' + data.roomId, data.hostToken); } catch {}
-        // เก็บ token ไว้ใน hash ด้วย เผื่อ localStorage ใช้ไม่ได้ (hash ไม่ถูกส่งไปที่ server)
-        location.href = '/room/' + data.roomId + '#host=' + encodeURIComponent(data.hostToken);
+        const maps = await loadMaps();
+        const roomId = await createRoom(maps[0]?.id ?? '');
+        location.href = 'room.html?r=' + roomId;
       } catch (e) {
-        errorEl.textContent = e.message;
+        console.error(e);
+        errorEl.textContent = 'สร้างห้องไม่สำเร็จ: ' + e.message;
         createBtn.disabled = false;
       }
     });
@@ -48,11 +53,11 @@
     document.getElementById('join-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const code = document.getElementById('code').value.trim().toUpperCase();
-      if (!/^[A-Z0-9]{6}$/.test(code)) {
-        errorEl.textContent = 'รหัสห้องต้องมี 6 ตัวอักษร';
+      if (!ROOM_ID_RE.test(code)) {
+        errorEl.textContent = 'รหัสห้องไม่ถูกต้อง (ต้องมี 6 ตัวอักษร)';
         return;
       }
-      location.href = '/room/' + code;
+      location.href = 'room.html?r=' + code;
     });
   </script>
 </body>
