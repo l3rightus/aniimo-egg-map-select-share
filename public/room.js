@@ -6,6 +6,8 @@ const roomId = (new URLSearchParams(location.search).get('r') || '').toUpperCase
 let maps = [];
 let currentMapId;
 let isHost = false;
+let allMarks = {}; // { [mapId]: { [markId]: { x, y } } } พิกัด 0..1 เทียบกับขนาดรูป
+let markMode = false;
 
 $('room-code').textContent = roomId || '------';
 document.title = `ห้อง ${roomId} · Aniimo Egg Map`;
@@ -43,7 +45,69 @@ const MAX_SCALE = 8;
 
 function apply() {
   img.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+  positionMarks();
 }
+
+// ---------- กากบาท (marks) ----------
+const marksLayer = $('marks');
+const MARK_HIT_PX = 18;
+
+const currentMarks = () => allMarks?.[currentMapId] || {};
+
+function toScreen(m) {
+  return [view.x + m.x * img.naturalWidth * view.scale, view.y + m.y * img.naturalHeight * view.scale];
+}
+
+function positionMarks() {
+  for (const el of marksLayer.children) {
+    const [sx, sy] = toScreen(el._mark);
+    el.style.transform = `translate(${sx}px, ${sy}px)`;
+  }
+}
+
+function renderMarks() {
+  marksLayer.replaceChildren();
+  for (const [id, m] of Object.entries(currentMarks())) {
+    const el = document.createElement('div');
+    el.className = 'mark';
+    el.dataset.id = id;
+    el._mark = m;
+    marksLayer.appendChild(el);
+  }
+  positionMarks();
+  const n = marksLayer.children.length;
+  $('mark-clear').disabled = n === 0;
+}
+
+function setMarkMode(on) {
+  markMode = on;
+  stage.classList.toggle('marking', on);
+  $('mark-toggle').classList.toggle('active', on);
+  $('mark-toggle').setAttribute('aria-pressed', String(on));
+  if (on) toast('แตะแมพเพื่อวางกากบาท แตะกากบาทเดิมเพื่อลบ');
+}
+
+async function markTap(sx, sy) {
+  if (!isHost || !markMode || img.hidden || !img.naturalWidth || !currentMapId) return;
+  // แตะโดนกากบาทเดิม → ลบ
+  for (const [id, m] of Object.entries(currentMarks())) {
+    const [mx, my] = toScreen(m);
+    if (Math.hypot(mx - sx, my - sy) <= MARK_HIT_PX) {
+      return fb.removeMark(roomId, currentMapId, id).catch(() => toast('ลบกากบาทไม่สำเร็จ'));
+    }
+  }
+  const x = (sx - view.x) / view.scale / img.naturalWidth;
+  const y = (sy - view.y) / view.scale / img.naturalHeight;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return;
+  fb.addMark(roomId, currentMapId, x, y).catch(() => toast('วางกากบาทไม่สำเร็จ'));
+}
+
+$('mark-toggle').addEventListener('click', () => setMarkMode(!markMode));
+$('mark-clear').addEventListener('click', () => {
+  if (!Object.keys(currentMarks()).length) return;
+  if (!confirm('ลบกากบาททั้งหมดในแมพนี้?')) return;
+  fb.clearMarks(roomId, currentMapId).catch(() => toast('ลบไม่สำเร็จ'));
+});
 
 function fit() {
   if (!img.naturalWidth) return;
@@ -68,7 +132,7 @@ const center = () => [stage.clientWidth / 2, stage.clientHeight / 2];
 $('zoom-in').addEventListener('click', () => zoomAt(1.3, ...center()));
 $('zoom-out').addEventListener('click', () => zoomAt(1 / 1.3, ...center()));
 $('zoom-fit').addEventListener('click', fit);
-for (const id of ['zoom-in', 'zoom-out', 'zoom-fit']) {
+for (const id of ['zoom-in', 'zoom-out', 'zoom-fit', 'mark-toggle', 'mark-clear']) {
   $(id).addEventListener('pointerdown', (e) => e.stopPropagation());
 }
 
@@ -79,15 +143,18 @@ stage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 stage.addEventListener('dblclick', (e) => {
+  if (markMode) return;
   const r = stage.getBoundingClientRect();
   zoomAt(2, e.clientX - r.left, e.clientY - r.top);
 });
 
 const pointers = new Map();
 let pinchDist = 0;
+let tap = null; // ใช้แยก "แตะ" ออกจาก "ลาก"
 stage.addEventListener('pointerdown', (e) => {
   stage.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  tap = pointers.size === 1 ? { id: e.pointerId, x: e.clientX, y: e.clientY } : null;
   stage.classList.add('dragging');
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
@@ -99,6 +166,7 @@ stage.addEventListener('pointermove', (e) => {
   if (!prev) return;
   const cur = { x: e.clientX, y: e.clientY };
   pointers.set(e.pointerId, cur);
+  if (tap && Math.hypot(cur.x - tap.x, cur.y - tap.y) > 6) tap = null;
   if (pointers.size === 1) {
     view.x += cur.x - prev.x;
     view.y += cur.y - prev.y;
@@ -112,6 +180,11 @@ stage.addEventListener('pointermove', (e) => {
   }
 });
 const endPointer = (e) => {
+  if (e.type === 'pointerup' && tap && tap.id === e.pointerId && pointers.size === 1) {
+    const r = stage.getBoundingClientRect();
+    markTap(e.clientX - r.left, e.clientY - r.top);
+  }
+  if (pointers.size <= 1) tap = null;
   pointers.delete(e.pointerId);
   if (pointers.size < 2) pinchDist = 0;
   if (pointers.size === 0) stage.classList.remove('dragging');
@@ -127,14 +200,18 @@ new ResizeObserver(() => {
 
 img.addEventListener('load', () => {
   img.hidden = false;
+  marksLayer.hidden = false;
   $('empty').hidden = true;
   fit();
+  renderMarks();
 });
 
 // ---------- render ----------
 function showMap(mapId) {
   if (mapId === currentMapId) return;
   currentMapId = mapId;
+  marksLayer.hidden = true; // ซ่อนไว้จนกว่ารูปแมพใหม่จะโหลดเสร็จ
+  renderMarks();
   const map = maps.find((m) => m.id === mapId);
   for (const el of document.querySelectorAll('.thumb')) {
     el.classList.toggle('active', el.dataset.id === mapId);
@@ -179,6 +256,8 @@ function setHost(host) {
   $('role').classList.toggle('host', host);
   $('picker').hidden = !host;
   $('viewer-note').hidden = host;
+  $('mark-tools').hidden = !host;
+  if (!host) setMarkMode(false);
 }
 
 async function selectMap(mapId) {
@@ -200,6 +279,8 @@ function roomGone() {
   $('stage-title').hidden = true;
   $('picker').hidden = true;
   $('viewer-note').hidden = true;
+  $('mark-tools').hidden = true;
+  marksLayer.hidden = true;
   showMessage('ไม่พบห้องนี้<br><br><a class="btn primary" href="./">สร้างห้องใหม่</a>');
 }
 
@@ -222,6 +303,8 @@ async function init() {
     if (!room) return roomGone();
     setHost(room.host === user.uid);
     showMap(room.mapId);
+    allMarks = room.marks || {};
+    renderMarks();
     if (!joined) {
       joined = true;
       fb.joinPresence(roomId, user.uid, (n) => { $('viewers').textContent = '👥 ' + n; });

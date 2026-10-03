@@ -24,8 +24,13 @@
     <main id="stage" class="stage">
       <img id="map-img" alt="" draggable="false" hidden>
       <div id="stage-title" class="stage-title" hidden></div>
+      <div id="marks" class="marks" hidden></div>
       <div id="empty" class="empty">กำลังโหลด…</div>
       <div class="zoom-controls">
+        <div id="mark-tools" class="mark-tools" hidden>
+          <button class="btn" id="mark-toggle" aria-pressed="false" title="โหมดวางกากบาท" aria-label="โหมดวางกากบาท">✕</button>
+          <button class="btn" id="mark-clear" title="ลบกากบาททั้งหมดในแมพนี้" aria-label="ลบกากบาททั้งหมด" disabled>🗑</button>
+        </div>
         <button class="btn" id="zoom-in" aria-label="ซูมเข้า">+</button>
         <button class="btn" id="zoom-out" aria-label="ซูมออก">−</button>
         <button class="btn" id="zoom-fit" aria-label="พอดีจอ">⤢</button>
