@@ -194,3 +194,31 @@ button, input { font: inherit; }
   .thumb { width: 96px; }
   .thumb img { height: 56px; }
 }
+
+/* ---------- กากบาท ---------- */
+.marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.mark::before,
+.mark::after {
+  content: "";
+  position: absolute;
+  left: -13px;
+  top: -2.5px;
+  width: 26px;
+  height: 5px;
+  border-radius: 3px;
+  background: #ff3b30;
+  box-shadow: 0 0 0 1.5px #fff, 0 1px 4px rgba(0, 0, 0, .6);
+  transform: rotate(45deg);
+}
+.mark::after { transform: rotate(-45deg); }
+.mark-tools { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+#mark-toggle { color: #ff3b30; font-weight: 700; }
+#mark-toggle.active { background: #ff3b30; color: #fff; border-color: #ff3b30; }
+.stage.marking { cursor: crosshair; }

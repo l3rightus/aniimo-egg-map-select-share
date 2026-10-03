@@ -9,6 +9,17 @@
         "mapId": { ".validate": "newData.isString() && newData.val().length <= 64" },
         "createdAt": { ".validate": "newData.isNumber()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
+        "marks": {
+          "$mapId": {
+            ".validate": "$mapId.length <= 64",
+            "$markId": {
+              ".validate": "newData.hasChildren(['x', 'y'])",
+              "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+              "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+              "$other": { ".validate": false }
+            }
+          }
+        },
         "$other": { ".validate": false }
       }
     },

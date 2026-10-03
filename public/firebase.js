@@ -6,6 +6,8 @@ import {
   ref,
   set,
   update,
+  push,
+  remove,
   onValue,
   onDisconnect,
   serverTimestamp,
@@ -63,6 +65,18 @@ export async function createRoom(mapId) {
 
 export function setRoomMap(roomId, mapId) {
   return update(ref(db, `rooms/${roomId}`), { mapId, updatedAt: serverTimestamp() });
+}
+
+export function addMark(roomId, mapId, x, y) {
+  return push(ref(db, `rooms/${roomId}/marks/${mapId}`), { x, y });
+}
+
+export function removeMark(roomId, mapId, markId) {
+  return remove(ref(db, `rooms/${roomId}/marks/${mapId}/${markId}`));
+}
+
+export function clearMarks(roomId, mapId) {
+  return remove(ref(db, `rooms/${roomId}/marks/${mapId}`));
 }
 
 /** callback(room | null) ทุกครั้งที่ข้อมูลห้องเปลี่ยน */
