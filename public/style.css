@@ -257,6 +257,16 @@ button, input { font: inherit; }
 .marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .mark, .ping { position: absolute; left: 0; top: 0; width: 0; height: 0; }
 
+/* กรอบห้องประตู สีตามไอคอนประตู */
+.door {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border: 3px solid var(--c);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 0 10px var(--c), inset 0 0 10px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
 .mark-x::before,
 .mark-x::after {
   content: "";
