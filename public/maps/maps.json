@@ -1,7 +1,27 @@
 [
-  { "id": "map-1", "name": "แมพ 1", "file": "map-1.webp" },
-  { "id": "map-2", "name": "แมพ 2", "file": "map-2.webp" },
-  { "id": "map-3", "name": "แมพ 3", "file": "map-3.webp" },
-  { "id": "map-4", "name": "แมพ 4", "file": "map-4.webp" },
-  { "id": "map-5", "name": "แมพ 5", "file": "map-5.webp" }
+  {
+    "id": "map-1",
+    "name": "แมพ 1",
+    "file": "map-1.webp"
+  },
+  {
+    "id": "map-2",
+    "name": "แมพ 2",
+    "file": "map-2.webp"
+  },
+  {
+    "id": "map-3",
+    "name": "แมพ 3",
+    "file": "map-3.webp"
+  },
+  {
+    "id": "map-4",
+    "name": "แมพ 4",
+    "file": "map-4.webp"
+  },
+  {
+    "id": "map-5",
+    "name": "แมพ 5",
+    "file": "map-5.webp"
+  }
 ]
