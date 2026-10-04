@@ -190,9 +190,17 @@ button, input { font: inherit; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-@media (max-width: 560px) {
-  .thumb { width: 96px; }
-  .thumb img { height: 56px; }
+/* จอแคบ: เรียงเป็นตารางให้เห็นทุกแมพในจอเดียว ไม่ต้องปัดหา */
+@media (max-width: 700px) {
+  .picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+    gap: 6px;
+    overflow: visible;
+    padding: 8px 12px;
+  }
+  .thumb { width: auto; padding: 3px; font-size: 12px; }
+  .thumb img { height: 44px; }
 }
 
 /* ---------- แถบเครื่องมือ ---------- */
