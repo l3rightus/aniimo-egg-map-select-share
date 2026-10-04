@@ -195,17 +195,62 @@ button, input { font: inherit; }
   .thumb img { height: 56px; }
 }
 
-/* ---------- กากบาท ---------- */
-.marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.mark {
+/* ---------- แถบเครื่องมือ ---------- */
+.tools {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 80px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(24, 27, 34, .92);
+  border: 1px solid var(--border);
 }
-.mark::before,
-.mark::after {
+.tool {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.tool:disabled { opacity: .4; cursor: default; }
+.tool.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tool-check { color: #30d158; }
+.tool-x { color: #ff3b30; }
+.tool-num { font-size: 15px; border-radius: 50%; }
+.tool-sep { width: 1px; height: 28px; background: var(--border); margin: 0 2px; }
+.colors { display: flex; gap: 6px; }
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--c);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35);
+}
+.swatch.active { border-color: #fff; }
+.stage.marking { cursor: crosshair; }
+.stage { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+/* ---------- มาร์กบนแมพ ---------- */
+.marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.mark, .ping { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+
+.mark-x::before,
+.mark-x::after {
   content: "";
   position: absolute;
   left: -13px;
@@ -213,12 +258,113 @@ button, input { font: inherit; }
   width: 26px;
   height: 5px;
   border-radius: 3px;
-  background: #ff3b30;
+  background: var(--c);
   box-shadow: 0 0 0 1.5px #fff, 0 1px 4px rgba(0, 0, 0, .6);
   transform: rotate(45deg);
 }
-.mark::after { transform: rotate(-45deg); }
-.mark-tools { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
-#mark-toggle { color: #ff3b30; font-weight: 700; }
-#mark-toggle.active { background: #ff3b30; color: #fff; border-color: #ff3b30; }
-.stage.marking { cursor: crosshair; }
+.mark-x::after { transform: rotate(-45deg); }
+
+.mark-num {
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: var(--c);
+  color: #111;
+  font-weight: 800;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0, 0, 0, .6);
+}
+
+.mark-check .tick {
+  position: absolute;
+  left: -13px;
+  top: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #30d158;
+  color: #fff;
+  font-weight: 900;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--c), 0 1px 4px rgba(0, 0, 0, .6);
+}
+.tag {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--c);
+  color: #111;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tag:empty { display: none; }
+
+.ping .ring {
+  position: absolute;
+  left: -12px;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--c);
+  animation: ping 1.2s ease-out infinite;
+}
+.ping .ring.r2 { animation-delay: .6s; }
+.ping .tag { top: 18px; }
+@keyframes ping {
+  from { transform: scale(.6); opacity: 1; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+
+/* ---------- คนในห้อง / dialog ---------- */
+.badge-btn { cursor: pointer; font: inherit; font-size: 12px; }
+.badge-btn:hover { border-color: var(--muted); color: var(--text); }
+.claim-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #3a2f12;
+  border-bottom: 1px solid var(--border);
+}
+.dialog {
+  width: min(92vw, 380px);
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+.dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.dialog h2 { margin: 0 0 12px; font-size: 18px; }
+.dialog .muted { margin: -6px 0 12px; color: var(--muted); font-size: 14px; }
+.dialog input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.members { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 50vh; overflow: auto; }
+.members li { display: flex; align-items: center; gap: 8px; }
+.dot-c { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.m-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-extra { color: var(--muted); font-size: 13px; flex: 1; }
+
+@media (max-width: 560px) {
+  .tool { width: 36px; height: 36px; font-size: 16px; }
+  .swatch { width: 22px; height: 22px; }
+}

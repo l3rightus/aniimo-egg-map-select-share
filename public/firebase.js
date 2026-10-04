@@ -67,8 +67,9 @@ export function setRoomMap(roomId, mapId) {
   return update(ref(db, `rooms/${roomId}`), { mapId, updatedAt: serverTimestamp() });
 }
 
-export function addMark(roomId, mapId, x, y) {
-  return push(ref(db, `rooms/${roomId}/marks/${mapId}`), { x, y });
+/** mark = { x, y, kind: 'x' | 'num' | 'check', color?, n?, by, name?, at } */
+export function addMark(roomId, mapId, mark) {
+  return push(ref(db, `rooms/${roomId}/marks/${mapId}`), { ...mark, at: serverTimestamp() });
 }
 
 export function removeMark(roomId, mapId, markId) {
@@ -79,21 +80,58 @@ export function clearMarks(roomId, mapId) {
   return remove(ref(db, `rooms/${roomId}/marks/${mapId}`));
 }
 
+/** เริ่มรอบใหม่: ลบมาร์กทุกแมพ และ ping ที่ค้างอยู่ */
+export function resetRound(roomId) {
+  return update(ref(db, `rooms/${roomId}`), { marks: null, pings: null, updatedAt: serverTimestamp() });
+}
+
+/** ping จุดบนแมพชั่วคราว (ลบตัวเองหลัง ttl ms) */
+export async function addPing(roomId, ping, ttl) {
+  const r = push(ref(db, `rooms/${roomId}/pings`));
+  await set(r, { ...ping, at: serverTimestamp() });
+  setTimeout(() => remove(r).catch(() => {}), ttl);
+}
+
+export function transferHost(roomId, uid) {
+  return update(ref(db, `rooms/${roomId}`), { host: uid, updatedAt: serverTimestamp() });
+}
+
+/** รับตำแหน่งหัวหน้าเมื่อหัวหน้าเดิมออฟไลน์ (rules ตรวจว่าหัวหน้าเดิมไม่อยู่ในห้องจริง) */
+export function claimHost(roomId, uid) {
+  return set(ref(db, `rooms/${roomId}/host`), uid);
+}
+
 /** callback(room | null) ทุกครั้งที่ข้อมูลห้องเปลี่ยน */
 export function watchRoom(roomId, callback, onError) {
   return onValue(ref(db, `rooms/${roomId}`), (snap) => callback(snap.val()), onError);
 }
 
-/** ลงชื่อว่าอยู่ในห้อง (หายไปเองเมื่อปิดหน้า) และแจ้งจำนวนคนในห้อง */
-export function joinPresence(roomId, uid, onCount) {
+/**
+ * ลงชื่อว่าอยู่ในห้อง (หายไปเองเมื่อปิดหน้า) และแจ้งรายชื่อคนในห้อง
+ * คืนค่า { setName, leave }
+ */
+export function joinPresence(roomId, uid, name, onMembers) {
   const me = ref(db, `presence/${roomId}/${uid}`);
+  let myName = name;
   const offConnected = onValue(ref(db, '.info/connected'), async (snap) => {
     if (snap.val() !== true) return;
     await onDisconnect(me).remove();
-    await set(me, true);
+    await set(me, { name: myName });
   });
-  const offCount = onValue(ref(db, `presence/${roomId}`), (snap) => onCount(snap.size));
-  return () => { offConnected(); offCount(); };
+  const offMembers = onValue(ref(db, `presence/${roomId}`), (snap) => {
+    const list = [];
+    snap.forEach((c) => { list.push({ uid: c.key, name: c.val()?.name || '' }); });
+    onMembers(list);
+  });
+  return {
+    setName(n) { myName = n; return set(me, { name: n }); },
+    leave() { offConnected(); offMembers(); remove(me); },
+  };
+}
+
+/** ส่วนต่างเวลาเครื่องเรากับเวลา server (ms) */
+export function watchServerOffset(callback) {
+  return onValue(ref(db, '.info/serverTimeOffset'), (snap) => callback(snap.val() || 0));
 }
 
 export function watchConnection(callback) {

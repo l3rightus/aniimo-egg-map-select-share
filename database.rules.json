@@ -3,9 +3,12 @@
     "rooms": {
       "$roomId": {
         ".read": true,
-        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid) || (data.exists() && data.child('host').val() === auth.uid && newData.child('host').val() === auth.uid))",
+        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid) || (data.exists() && data.child('host').val() === auth.uid))",
         ".validate": "$roomId.matches(/^[A-HJ-NP-Z2-9]{6}$/) && newData.hasChildren(['host', 'mapId', 'createdAt', 'updatedAt'])",
-        "host": { ".validate": "newData.isString()" },
+        "host": {
+          ".write": "auth != null && data.exists() && newData.val() === auth.uid && !root.child('presence').child($roomId).child(data.val()).exists() && root.child('presence').child($roomId).child(auth.uid).exists()",
+          ".validate": "newData.isString() && (newData.val() === auth.uid || root.child('presence').child($roomId).child(newData.val()).exists())"
+        },
         "mapId": { ".validate": "newData.isString() && newData.val().length <= 64" },
         "createdAt": { ".validate": "newData.isNumber()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
@@ -13,11 +16,31 @@
           "$mapId": {
             ".validate": "$mapId.length <= 64",
             "$markId": {
-              ".validate": "newData.hasChildren(['x', 'y'])",
+              ".write": "auth != null && ((!data.exists() && newData.child('kind').val() === 'check' && newData.child('by').val() === auth.uid) || (!newData.exists() && data.child('kind').val() === 'check' && data.child('by').val() === auth.uid))",
+              ".validate": "newData.hasChildren(['x', 'y', 'kind', 'by'])",
               "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
               "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+              "kind": { ".validate": "newData.val() === 'x' || newData.val() === 'num' || newData.val() === 'check'" },
+              "color": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)" },
+              "n": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999" },
+              "by": { ".validate": "newData.val() === auth.uid" },
+              "name": { ".validate": "newData.isString() && newData.val().length <= 20" },
+              "at": { ".validate": "newData.isNumber()" },
               "$other": { ".validate": false }
             }
+          }
+        },
+        "pings": {
+          "$pingId": {
+            ".write": "auth != null && ((!data.exists() && newData.child('by').val() === auth.uid) || (!newData.exists() && data.child('by').val() === auth.uid))",
+            ".validate": "newData.hasChildren(['x', 'y', 'mapId', 'by', 'at'])",
+            "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+            "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+            "mapId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "by": { ".validate": "newData.val() === auth.uid" },
+            "name": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
           }
         },
         "$other": { ".validate": false }
@@ -28,7 +51,9 @@
         ".read": true,
         "$uid": {
           ".write": "auth != null && auth.uid === $uid",
-          ".validate": "newData.isBoolean() && root.child('rooms').child($roomId).exists()"
+          ".validate": "newData.hasChildren(['name']) && root.child('rooms').child($roomId).exists()",
+          "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+          "$other": { ".validate": false }
         }
       }
     }
