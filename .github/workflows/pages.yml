@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # ใส่เลขเวอร์ชันท้ายไฟล์ (?v=...) ให้เบราว์เซอร์โหลดไฟล์ใหม่ทุกครั้งที่ deploy ไม่ปนกับไฟล์เก่าใน cache
+      - name: Stamp asset version
+        run: sed -i "s/?v=dev/?v=${GITHUB_SHA::8}/g" public/*.html public/*.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
