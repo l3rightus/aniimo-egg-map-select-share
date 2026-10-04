@@ -1,4 +1,4 @@
-import * as fb from './firebase.js';
+import * as fb from './firebase.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const roomId = (new URLSearchParams(location.search).get('r') || '').toUpperCase();
@@ -207,12 +207,18 @@ new ResizeObserver(() => {
   if (size !== lastSize) { lastSize = size; fit(); }
 }).observe(stage);
 
-img.addEventListener('load', () => {
+function onImageReady() {
   img.hidden = false;
   overlay.hidden = false;
   $('empty').hidden = true;
   fit();
   renderOverlay();
+}
+img.addEventListener('load', onImageReady);
+img.addEventListener('error', () => {
+  img.hidden = true;
+  overlay.hidden = true;
+  showMessage('โหลดรูปแมพไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง');
 });
 
 // ---------- เครื่องมือ ----------
@@ -396,6 +402,8 @@ function showMap(mapId) {
   $('stage-title').hidden = false;
   img.alt = map.name;
   img.src = map.url;
+  // ถ้ารูปอยู่ใน cache แล้ว (เช่นสลับแมพไปมาเร็ว ๆ) เบราว์เซอร์อาจไม่ยิง load ซ้ำ
+  if (img.complete && img.naturalWidth) onImageReady();
 }
 
 function showMessage(html) {
@@ -569,6 +577,9 @@ async function init() {
         members = list;
         membersLoaded = true;
         renderMembers();
+      }, (e) => {
+        console.error(e);
+        toast('ลงชื่อในห้องไม่สำเร็จ — Firebase Rules อาจยังเป็นเวอร์ชันเก่า');
       });
     }
   }, (e) => {

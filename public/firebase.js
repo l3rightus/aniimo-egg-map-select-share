@@ -12,7 +12,7 @@ import {
   onDisconnect,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { firebaseConfig, emulators } from './firebase-config.js';
+import { firebaseConfig, emulators } from './firebase-config.js?v=dev';
 
 export const configured = Boolean(firebaseConfig?.apiKey && firebaseConfig?.databaseURL);
 
@@ -108,15 +108,19 @@ export function watchRoom(roomId, callback, onError) {
 
 /**
  * ลงชื่อว่าอยู่ในห้อง (หายไปเองเมื่อปิดหน้า) และแจ้งรายชื่อคนในห้อง
- * คืนค่า { setName, leave }
+ * คืนค่า { setName, leave } — onError ถูกเรียกถ้าเขียนไม่ได้ (เช่น Firebase Rules ยังเป็นเวอร์ชันเก่า)
  */
-export function joinPresence(roomId, uid, name, onMembers) {
+export function joinPresence(roomId, uid, name, onMembers, onError) {
   const me = ref(db, `presence/${roomId}/${uid}`);
   let myName = name;
   const offConnected = onValue(ref(db, '.info/connected'), async (snap) => {
     if (snap.val() !== true) return;
-    await onDisconnect(me).remove();
-    await set(me, { name: myName });
+    try {
+      await onDisconnect(me).remove();
+      await set(me, { name: myName });
+    } catch (e) {
+      onError?.(e);
+    }
   });
   const offMembers = onValue(ref(db, `presence/${roomId}`), (snap) => {
     const list = [];
@@ -139,7 +143,7 @@ export function watchConnection(callback) {
 }
 
 export async function loadMaps() {
-  const res = await fetch('maps/maps.json');
+  const res = await fetch('maps/maps.json?v=dev');
   const list = await res.json();
   return list.map((m) => ({ ...m, url: 'maps/' + encodeURIComponent(m.file) }));
 }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Aniimo Egg Map</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=dev">
 </head>
 <body>
   <main class="home">
@@ -26,7 +26,7 @@
   </main>
 
   <script type="module">
-    import { configured, createRoom, loadMaps, ROOM_ID_RE } from './firebase.js';
+    import { configured, createRoom, loadMaps, ROOM_ID_RE } from './firebase.js?v=dev';
 
     const errorEl = document.getElementById('error');
     const createBtn = document.getElementById('create');
