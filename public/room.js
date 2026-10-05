@@ -317,8 +317,15 @@ function sendPing(sx, sy) {
 const overlayEls = new Map();
 let pingTimer = 0;
 
+const DOOR_COLORS = { blue: '#4da3ff', orange: '#ff9f1a' };
+
 function buildEl(item) {
   const el = document.createElement('div');
+  if (item.type === 'door') {
+    el.className = 'door';
+    el.style.setProperty('--c', DOOR_COLORS[item.color] || item.color);
+    return el;
+  }
   if (item.type === 'ping') {
     el.className = 'ping';
     el.style.setProperty('--c', userColor(item.by));
@@ -343,6 +350,9 @@ function buildEl(item) {
 
 function renderOverlay() {
   const items = new Map();
+  // กรอบห้องประตู (ข้อมูลคงที่จาก maps.json) วาดก่อนเพื่อให้อยู่ใต้มาร์ก
+  const doors = maps.find((m) => m.id === currentMapId)?.doors || [];
+  doors.forEach((d, i) => items.set(`d:${currentMapId}:${i}`, { ...d, type: 'door' }));
   for (const [id, m] of Object.entries(currentMarks())) items.set(`m:${currentMapId}:${id}`, m);
 
   const now = serverNow();
@@ -362,7 +372,8 @@ function renderOverlay() {
     if (!el) {
       el = buildEl(item);
       overlayEls.set(key, el);
-      overlay.appendChild(el);
+      if (item.type === 'door') overlay.prepend(el);
+      else overlay.appendChild(el);
     }
     el._pos = item;
   }
@@ -379,6 +390,10 @@ function positionOverlay() {
   for (const el of overlayEls.values()) {
     const [sx, sy] = toScreen(el._pos);
     el.style.transform = `translate(${sx}px, ${sy}px)`;
+    if (el._pos.type === 'door') {
+      el.style.width = el._pos.w * img.naturalWidth * view.scale + 'px';
+      el.style.height = el._pos.h * img.naturalHeight * view.scale + 'px';
+    }
   }
 }
 
