@@ -11,6 +11,8 @@ import {
   onValue,
   onDisconnect,
   serverTimestamp,
+  goOffline,
+  goOnline,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { firebaseConfig, emulators } from './firebase-config.js?v=dev';
 
@@ -53,6 +55,7 @@ export async function createRoom(mapId) {
       await set(ref(db, `rooms/${id}`), {
         host: user.uid,
         mapId,
+        viewerMarks: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -90,6 +93,17 @@ export async function addPing(roomId, ping, ttl) {
   const r = push(ref(db, `rooms/${roomId}/pings`));
   await set(r, { ...ping, at: serverTimestamp() });
   setTimeout(() => remove(r).catch(() => {}), ttl);
+}
+
+/** หัวหน้าเปิด/ปิดให้ผู้ชมวางกากบาทและเลขลำดับได้ */
+export function setViewerMarks(roomId, allowed) {
+  return update(ref(db, `rooms/${roomId}`), { viewerMarks: allowed, updatedAt: serverTimestamp() });
+}
+
+/** ตัดการเชื่อมต่อชั่วคราว (คืนที่ให้คนอื่นตอนแท็บถูกพับไว้นาน ๆ) */
+export function setOnline(online) {
+  if (online) goOnline(db);
+  else goOffline(db);
 }
 
 export function transferHost(roomId, uid) {

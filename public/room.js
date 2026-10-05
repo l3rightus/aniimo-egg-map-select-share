@@ -33,6 +33,8 @@ function userColor(uid) {
 }
 
 const serverNow = () => Date.now() + serverOffset;
+/** หัวหน้ามาร์กได้เสมอ ผู้ชมมาร์กได้ถ้าหัวหน้าไม่ได้ล็อก (ห้องเก่าที่ไม่มีค่านี้ = เปิด) */
+const canMark = () => isHost || room?.viewerMarks !== false;
 
 // ---------- toast ----------
 let toastTimer;
@@ -281,8 +283,7 @@ function handleTap(sx, sy) {
   }
   if (hit) {
     const [id, m] = hit;
-    const mine = kindOf(m) === 'check' && m.by === me;
-    if (!isHost && !mine) return toast('ลบได้เฉพาะติ๊กของตัวเอง');
+    if (!isHost && m.by !== me) return toast('ลบได้เฉพาะมาร์กของตัวเอง');
     fb.removeMark(roomId, currentMapId, id).catch(() => toast('ลบไม่สำเร็จ'));
     return;
   }
@@ -292,11 +293,11 @@ function handleTap(sx, sy) {
   let mark;
   if (mode === 'check') {
     mark = { ...p, kind: 'check', by: me, name: myName };
-  } else if (isHost && mode === 'x') {
-    mark = { ...p, kind: 'x', color: markColor, by: me };
-  } else if (isHost && mode === 'num') {
+  } else if (canMark() && mode === 'x') {
+    mark = { ...p, kind: 'x', color: markColor, by: me, name: myName };
+  } else if (canMark() && mode === 'num') {
     const used = Object.values(currentMarks()).filter((m) => m.kind === 'num').map((m) => m.n);
-    mark = { ...p, kind: 'num', n: Math.min(999, Math.max(0, ...used) + 1), color: markColor, by: me };
+    mark = { ...p, kind: 'num', n: Math.min(999, Math.max(0, ...used) + 1), color: markColor, by: me, name: myName };
   } else {
     return;
   }
@@ -335,16 +336,21 @@ function buildEl(item) {
   }
   const kind = kindOf(item);
   el.className = 'mark mark-' + kind;
+  // มาร์กที่ผู้ชมวาง: แสดงชื่อคนวางกำกับไว้
+  const byViewer = item.by && item.by !== room?.host && item.name;
   if (kind === 'x') {
     el.style.setProperty('--c', item.color || MARK_COLORS[0]);
+    if (byViewer) el.innerHTML = '<span class="tag"></span>';
   } else if (kind === 'num') {
     el.style.setProperty('--c', item.color || MARK_COLORS[0]);
     el.textContent = item.n;
+    if (byViewer) el.insertAdjacentHTML('beforeend', '<span class="tag"></span>');
   } else {
     el.style.setProperty('--c', userColor(item.by));
     el.innerHTML = '<span class="tick">✓</span><span class="tag"></span>';
-    el.querySelector('.tag').textContent = item.name || '';
   }
+  const tag = el.querySelector('.tag');
+  if (tag) tag.textContent = item.name || '';
   return el;
 }
 
@@ -441,6 +447,24 @@ function renderPicker() {
   }
 }
 
+function updateTools() {
+  for (const el of document.querySelectorAll('.host-only')) el.hidden = !isHost;
+  for (const el of document.querySelectorAll('.mark-only')) el.hidden = !canMark();
+  if (!canMark() && (mode === 'x' || mode === 'num')) setMode('pan');
+  const open = room?.viewerMarks !== false;
+  $('viewer-marks').textContent = open ? '🔓' : '🔒';
+  $('viewer-marks').classList.toggle('locked', !open);
+  $('viewer-marks').setAttribute('aria-pressed', String(open));
+  $('viewer-marks').title = open ? 'ผู้ชมช่วยมาร์กได้ (กดเพื่อล็อก)' : 'ล็อกอยู่: ผู้ชมติ๊ก ✓ ได้อย่างเดียว (กดเพื่อปลดล็อก)';
+}
+
+$('viewer-marks').addEventListener('click', () => {
+  const next = room?.viewerMarks === false;
+  fb.setViewerMarks(roomId, next)
+    .then(() => toast(next ? 'ผู้ชมช่วยวางกากบาท/เลขได้แล้ว' : 'ล็อกแล้ว: ผู้ชมติ๊ก ✓ ได้อย่างเดียว'))
+    .catch(() => toast('เปลี่ยนไม่สำเร็จ'));
+});
+
 function setHost(host) {
   const changed = host !== isHost;
   isHost = host;
@@ -448,8 +472,7 @@ function setHost(host) {
   $('role').classList.toggle('host', host);
   $('picker').hidden = !host;
   $('viewer-note').hidden = host;
-  for (const el of document.querySelectorAll('.host-only')) el.hidden = !host;
-  if (!host && (mode === 'x' || mode === 'num')) setMode('pan');
+  updateTools();
   if (changed && $('role').dataset.ready) toast(host ? 'คุณเป็นหัวหน้าห้องแล้ว 👑' : 'คุณไม่ได้เป็นหัวหน้าห้องแล้ว');
   $('role').dataset.ready = '1';
 }
@@ -529,6 +552,22 @@ $('claim-host').addEventListener('click', async () => {
   }
 });
 
+// ---------- ประหยัดที่ (จำนวนคนพร้อมกัน) ----------
+// แท็บที่ถูกพับ/สลับแอปไว้เกิน 2 นาทีจะตัดการเชื่อมต่อ เพื่อคืนที่ให้คนอื่น แล้วต่อใหม่เองเมื่อกลับมา
+const SLEEP_AFTER_MS = 2 * 60 * 1000;
+let asleep = false;
+let sleepTimer = 0;
+document.addEventListener('visibilitychange', () => {
+  if (!fb.configured) return;
+  clearTimeout(sleepTimer);
+  if (document.hidden) {
+    sleepTimer = setTimeout(() => { asleep = true; fb.setOnline(false); }, SLEEP_AFTER_MS);
+  } else if (asleep) {
+    asleep = false;
+    fb.setOnline(true);
+  }
+});
+
 // ---------- ชื่อเล่น ----------
 function loadName() {
   try { return localStorage.getItem('nickname') || ''; } catch { return ''; }
@@ -571,16 +610,31 @@ async function init() {
   renderPicker();
 
   fb.watchServerOffset((o) => { serverOffset = o; });
+  // ต่อไม่ติดนานผิดปกติ = มักเป็นเพราะคนออนไลน์พร้อมกันเต็มโควตาของ Firebase
+  let stuckTimer = 0;
+  const armStuck = () => {
+    clearTimeout(stuckTimer);
+    stuckTimer = setTimeout(() => {
+      if (document.hidden) return;
+      $('status-text').textContent = 'เชื่อมต่อไม่ได้ (คนอาจเต็ม) ลองรีเฟรช';
+    }, 15000);
+  };
+  armStuck();
   fb.watchConnection((online) => {
     $('status').classList.toggle('online', online);
-    $('status-text').textContent = online ? 'เชื่อมต่อแล้ว' : 'กำลังเชื่อมต่อ…';
+    $('status-text').textContent = online ? 'เชื่อมต่อแล้ว' : (asleep ? 'พักการเชื่อมต่อ' : 'กำลังเชื่อมต่อ…');
+    if (online) clearTimeout(stuckTimer);
+    else if (!asleep) armStuck();
   });
 
   let joining = false;
   fb.watchRoom(roomId, async (data) => {
     if (!data) { room = null; return roomGone(); }
+    const lockChanged = room && (room.viewerMarks !== false) !== (data.viewerMarks !== false);
     room = data;
     setHost(room.host === me);
+    updateTools();
+    if (lockChanged && !isHost) toast(room.viewerMarks !== false ? 'หัวหน้าเปิดให้ช่วยวางกากบาท/เลขแล้ว' : 'หัวหน้าล็อกการวางกากบาท/เลขแล้ว');
     showMap(room.mapId);
     renderOverlay();
     renderMembers();
