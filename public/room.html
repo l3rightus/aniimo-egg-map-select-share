@@ -19,7 +19,7 @@
     </header>
 
     <nav id="picker" class="picker" hidden aria-label="เลือกแมพ"></nav>
-    <div id="viewer-note" class="viewer-note">หัวหน้าห้องเป็นคนเลือกแมพ · แตะ ✓ เพื่อติ๊กจุดที่เก็บแล้ว · แตะค้างเพื่อ ping</div>
+    <div id="viewer-note" class="viewer-note">หัวหน้าห้องเป็นคนเลือกแมพ · ทุกคนช่วยกันมาร์กได้ · แตะค้างเพื่อ ping</div>
     <div id="claim-bar" class="claim-bar" hidden>
       หัวหน้าห้องออฟไลน์อยู่
       <button id="claim-host" class="btn small primary">รับตำแหน่งหัวหน้า</button>
@@ -34,11 +34,12 @@
       <div id="tools" class="tools" role="toolbar" aria-label="เครื่องมือ">
         <button class="tool active" data-mode="pan" title="เลื่อนแมพ" aria-label="เลื่อนแมพ">✋</button>
         <button class="tool tool-check" data-mode="check" title="ติ๊กจุดที่เก็บแล้ว" aria-label="ติ๊กเก็บแล้ว">✓</button>
+        <span class="mark-only tool-sep" hidden></span>
+        <button class="tool tool-x mark-only" data-mode="x" title="วางกากบาท" aria-label="วางกากบาท" hidden>✕</button>
+        <button class="tool tool-num mark-only" data-mode="num" title="วางเลขลำดับ" aria-label="วางเลขลำดับ" hidden>1</button>
+        <span id="colors" class="colors mark-only" hidden></span>
         <span class="host-only tool-sep" hidden></span>
-        <button class="tool tool-x host-only" data-mode="x" title="วางกากบาท" aria-label="วางกากบาท" hidden>✕</button>
-        <button class="tool tool-num host-only" data-mode="num" title="วางเลขลำดับ" aria-label="วางเลขลำดับ" hidden>1</button>
-        <span id="colors" class="colors host-only" hidden></span>
-        <span class="host-only tool-sep" hidden></span>
+        <button class="tool host-only" id="viewer-marks" title="ล็อก/ปลดล็อกให้ผู้ชมช่วยมาร์ก" aria-label="ให้ผู้ชมช่วยมาร์ก" aria-pressed="true" hidden>🔓</button>
         <button class="tool host-only" id="mark-clear" title="ลบมาร์กทั้งหมดในแมพนี้" aria-label="ลบมาร์กทั้งหมดในแมพนี้" hidden>🗑</button>
         <button class="tool host-only" id="reset-round" title="เริ่มรอบใหม่ (ล้างทุกแมพ)" aria-label="เริ่มรอบใหม่" hidden>↺</button>
       </div>

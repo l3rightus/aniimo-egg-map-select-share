@@ -12,11 +12,12 @@
         "mapId": { ".validate": "newData.isString() && newData.val().length <= 64" },
         "createdAt": { ".validate": "newData.isNumber()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
+        "viewerMarks": { ".validate": "newData.isBoolean()" },
         "marks": {
           "$mapId": {
             ".validate": "$mapId.length <= 64",
             "$markId": {
-              ".write": "auth != null && ((!data.exists() && newData.child('kind').val() === 'check' && newData.child('by').val() === auth.uid) || (!newData.exists() && data.child('kind').val() === 'check' && data.child('by').val() === auth.uid))",
+              ".write": "auth != null && ((!data.exists() && newData.child('by').val() === auth.uid && (newData.child('kind').val() === 'check' || root.child('rooms').child($roomId).child('viewerMarks').val() !== false)) || (!newData.exists() && data.child('by').val() === auth.uid))",
               ".validate": "newData.hasChildren(['x', 'y', 'kind', 'by'])",
               "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
               "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },

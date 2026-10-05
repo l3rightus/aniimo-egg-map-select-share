@@ -237,6 +237,7 @@ button, input { font: inherit; }
 .tool-check { color: #30d158; }
 .tool-x { color: #ff3b30; }
 .tool-num { font-size: 15px; border-radius: 50%; }
+#viewer-marks.locked { background: #3a2f12; border-color: var(--accent); }
 .tool-sep { width: 1px; height: 28px; background: var(--border); margin: 0 2px; }
 .colors { display: flex; gap: 6px; }
 .swatch {
@@ -325,6 +326,8 @@ button, input { font: inherit; }
   white-space: nowrap;
 }
 .tag:empty { display: none; }
+.mark-num .tag { top: 28px; left: 13px; }
+.mark-x .tag { top: 14px; }
 
 .ping .ring {
   position: absolute;
