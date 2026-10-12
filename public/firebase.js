@@ -121,7 +121,8 @@ export function watchRoom(roomId, callback, onError) {
 }
 
 /**
- * ลงชื่อว่าอยู่ในห้อง (หายไปเองเมื่อปิดหน้า) และแจ้งรายชื่อคนในห้อง
+ * ลงชื่อว่าอยู่ในห้อง และแจ้งรายชื่อคนในห้อง [{ uid, name, online, seen }]
+ * ปิดหน้า/หลุด → ไม่ลบชื่อทิ้ง แต่ตั้ง online: false + seen (เวลาที่เห็นล่าสุด) เพื่อแสดงเป็น "ไม่อยู่" 
  * คืนค่า { setName, leave } — onError ถูกเรียกถ้าเขียนไม่ได้ (เช่น Firebase Rules ยังเป็นเวอร์ชันเก่า)
  */
 export function joinPresence(roomId, uid, name, onMembers, onError) {
@@ -130,20 +131,29 @@ export function joinPresence(roomId, uid, name, onMembers, onError) {
   const offConnected = onValue(ref(db, '.info/connected'), async (snap) => {
     if (snap.val() !== true) return;
     try {
-      await onDisconnect(me).remove();
-      await set(me, { name: myName });
+      // ตั้งค่าเต็ม (มี name) เพราะ rules ตรวจตอนลงทะเบียน ซึ่งตอนเข้าครั้งแรกยังไม่มีข้อมูลเดิม
+      await onDisconnect(me).set({ name: myName, online: false, seen: serverTimestamp() });
+      await set(me, { name: myName, online: true, seen: serverTimestamp() });
     } catch (e) {
       onError?.(e);
     }
   });
   const offMembers = onValue(ref(db, `presence/${roomId}`), (snap) => {
     const list = [];
-    snap.forEach((c) => { list.push({ uid: c.key, name: c.val()?.name || '' }); });
+    snap.forEach((c) => {
+      const v = c.val() || {};
+      // ข้อมูลจากเวอร์ชันก่อนไม่มี online/seen = ถือว่าออนไลน์
+      list.push({ uid: c.key, name: v.name || '', online: v.online !== false, seen: v.seen || 0 });
+    });
     onMembers(list);
   });
   return {
-    setName(n) { myName = n; return set(me, { name: n }); },
-    leave() { offConnected(); offMembers(); remove(me); },
+    async setName(n) {
+      myName = n;
+      await onDisconnect(me).set({ name: n, online: false, seen: serverTimestamp() });
+      return update(me, { name: n });
+    },
+    leave() { offConnected(); offMembers(); update(me, { online: false, seen: serverTimestamp() }); },
   };
 }
 
