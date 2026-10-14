@@ -503,20 +503,31 @@ function roomGone() {
 }
 
 // ---------- คนในห้อง ----------
+// คนที่ออฟไลน์ (พับแท็บ/เน็ตหลุด) ยังแสดงเป็น 💤 อีก 30 นาที
+const AWAY_SHOW_MS = 30 * 60 * 1000;
+// คนอื่นรับตำแหน่งหัวหน้าได้เมื่อหัวหน้าออฟไลน์เกิน 10 นาที (ตรงกับ rules)
+const HOST_GRACE_MS = 10 * 60 * 1000;
+const isAway = (m) => !m.online;
+const visibleMembers = () => members.filter((m) => m.online || serverNow() - m.seen < AWAY_SHOW_MS);
+
 function renderMembers() {
-  $('viewers').textContent = '👥 ' + members.length;
+  const shown = visibleMembers();
+  const away = shown.filter(isAway).length;
+  $('viewers').textContent = '👥 ' + (shown.length - away) + (away ? ` · 💤 ${away}` : '');
   const list = $('members-list');
   list.replaceChildren();
-  const sorted = [...members].sort((a, b) => (b.uid === room?.host) - (a.uid === room?.host) || a.name.localeCompare(b.name));
+  const sorted = [...shown].sort((a, b) => (b.uid === room?.host) - (a.uid === room?.host) || isAway(a) - isAway(b) || a.name.localeCompare(b.name));
   for (const m of sorted) {
     const li = document.createElement('li');
+    li.classList.toggle('away', isAway(m));
     li.innerHTML = '<span class="dot-c"></span><span class="m-name"></span><span class="m-extra"></span>';
     li.querySelector('.dot-c').style.background = userColor(m.uid);
     li.querySelector('.m-name').textContent = m.name || 'ไม่มีชื่อ';
     const extra = li.querySelector('.m-extra');
     if (m.uid === room?.host) extra.append('👑 ');
     if (m.uid === me) extra.append('(คุณ)');
-    if (isHost && m.uid !== me) {
+    if (isAway(m)) extra.append(' 💤 ไม่อยู่หน้าจอ');
+    if (isHost && m.uid !== me && !isAway(m)) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'btn small';
@@ -537,10 +548,13 @@ function renderMembers() {
 }
 
 function updateClaimBar() {
-  const hostOnline = members.some((m) => m.uid === room?.host);
-  const imIn = members.some((m) => m.uid === me);
-  $('claim-bar').hidden = !(room && membersLoaded && !isHost && !hostOnline && imIn);
+  const host = members.find((m) => m.uid === room?.host);
+  const hostGone = !host || (!host.online && serverNow() - host.seen > HOST_GRACE_MS);
+  const imIn = members.some((m) => m.uid === me && m.online);
+  $('claim-bar').hidden = !(room && membersLoaded && !isHost && hostGone && imIn);
 }
+// สถานะ "ไม่อยู่" ขึ้นกับเวลา จึงคำนวณใหม่เป็นระยะ
+setInterval(() => { if (membersLoaded) renderMembers(); }, 30000);
 
 $('viewers').addEventListener('click', () => { renderMembers(); $('members-dialog').showModal(); });
 
@@ -561,7 +575,12 @@ document.addEventListener('visibilitychange', () => {
   if (!fb.configured) return;
   clearTimeout(sleepTimer);
   if (document.hidden) {
-    sleepTimer = setTimeout(() => { asleep = true; fb.setOnline(false); }, SLEEP_AFTER_MS);
+    // หัวหน้าไม่ต้องพัก (เป็นแค่ 1 การเชื่อมต่อ และไม่อยากให้คนอื่นเห็นว่าหัวหน้าออฟไลน์)
+    sleepTimer = setTimeout(() => {
+      if (isHost) return;
+      asleep = true;
+      fb.setOnline(false);
+    }, SLEEP_AFTER_MS);
   } else if (asleep) {
     asleep = false;
     fb.setOnline(true);
